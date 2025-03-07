@@ -1,0 +1,15 @@
+<section id="publications" class="section-container">
+    <h2 class="section-title text-center mb-6" data-aos="fade-up">Publications</h2>
+  
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div *ngFor="let pub of publications" 
+           class="p-6 rounded-lg shadow-md bg-gray-900">
+        <h3 class="text-xl font-bold text-lightest-slate">{{ pub.title }}</h3>
+        <p class="text-slate">{{ pub.journal }} • <span class="text-green-400">{{ pub.publishedDate }}</span></p>
+        <a [href]="pub.link" target="_blank" 
+           class="mt-2 inline-block text-green-400 hover:underline">
+          Read Publication
+        </a>
+      </div>
+    </div>
+  </section>
