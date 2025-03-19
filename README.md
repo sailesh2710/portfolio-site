@@ -40,11 +40,11 @@ npm run serve:ssr
 
 ## 🌐 Demo
 
-Check out the site: https://portfolio-9qi61itdb-saileshks-projects.vercel.app/
+Check out the site: https://www.saileshk.site/
 
 ## 📧 Contact
 
 For questions or feedback, feel free to reach out:
 - **Email**: [saileshkumar2710@gmail.com](mailto:saileshkumar2710@gmail.com)
-- **LinkedIn**: [Your LinkedIn Profile](https://www.linkedin.com/in/sailesh2710/)
-- **GitHub**: [Your GitHub Profile](https://github.com/sailesh2710)
+- **LinkedIn**: [Sailesh Kumar](https://www.linkedin.com/in/sailesh2710/)
+- **GitHub**: [sailesh2710](https://github.com/sailesh2710)
