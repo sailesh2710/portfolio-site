@@ -124,6 +124,47 @@ resource "aws_iam_role_policy" "codepipeline_s3_policy" {
   })
 }
 
+resource "aws_iam_role_policy" "codepipeline_eb_policy" {
+  name = "codepipeline-eb-policy"
+  role = aws_iam_role.codepipeline_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "elasticbeanstalk:CreateApplicationVersion",
+          "elasticbeanstalk:UpdateEnvironment",
+          "elasticbeanstalk:DescribeEnvironments",
+          "elasticbeanstalk:DescribeApplicationVersions"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "cloudformation:GetTemplate",
+          "cloudformation:DescribeStacks",
+          "cloudformation:DescribeStackResources"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ec2:DescribeImages",
+          "ec2:DescribeInstances",
+          "ec2:DescribeSecurityGroups",
+          "ec2:DescribeSubnets",
+          "ec2:DescribeVpcs"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
 resource "aws_iam_role_policy_attachment" "codepipeline_codebuild_access" {
   role       = aws_iam_role.codepipeline_role.name
   policy_arn = "arn:aws:iam::aws:policy/AWSCodeBuildDeveloperAccess"

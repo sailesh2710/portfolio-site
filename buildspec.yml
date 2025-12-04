@@ -2,26 +2,33 @@ version: 0.2
 
 phases:
   install:
-    runtime-versions:
-      nodejs: 20
     commands:
-      - echo "Installing dependencies..."
+      - echo Installing Node 20...
+      - n 20
       - npm install
       - npm install -g @angular/cli
 
   build:
     commands:
-      - echo "Building Angular SSR application..."
-      - npm run build:ssr || npm run build:prod
-      - echo "Preparing Elastic Beanstalk deployment bundle..."
+      - echo Building Angular browser + server bundles...
+      - npm run build:prod
+      - npm run build:ssr
+      - echo Compiling custom server.ts...
+      - npx tsc server.ts --outDir dist-server
+
+  post_build:
+    commands:
+      - echo Preparing Elastic Beanstalk deployment bundle...
+
       - mkdir -p deploy
-      - cp -R dist/portfolio/* deploy/
-      - echo "import('./server/server.mjs');" > deploy/server.js
+      - cp -R dist/portfolio/browser deploy/public
+      - cp -R dist/portfolio/server deploy/server
+      - cp dist-server/server.js deploy/
+
       - cp package.json deploy/
-      - |
-        node -e "const fs=require('fs'); const p='./deploy/package.json'; const j=JSON.parse(fs.readFileSync(p)); j.scripts={ start: 'node server.js' }; fs.writeFileSync(p, JSON.stringify(j, null, 2));"
+      - cp Procfile deploy/
 
 artifacts:
-  base-directory: deploy
   files:
-    - "**/*"
+    - '**/*'
+  base-directory: deploy
