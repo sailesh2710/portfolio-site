@@ -1,1 +1,1 @@
-web: node server.js
+web: node dist/portfolio/server/server.mjs
