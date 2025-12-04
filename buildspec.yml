@@ -5,28 +5,33 @@ phases:
     runtime-versions:
       nodejs: 20
     commands:
-      - echo "Buildspec found"
       - echo "Installing dependencies..."
       - npm install
       - npm install -g @angular/cli
+
   build:
     commands:
       - echo "Building Angular SSR application..."
-      - npm run build:ssr
+      - npm run build:ssr   # This now only runs ng build --configuration=production
 
       - echo "Preparing Elastic Beanstalk deployment bundle..."
 
-      # Create deploy folder
+      # Create deploy directory
       - mkdir -p deploy
 
-      # Copy Angular outputs (server + browser)
-      - cp -R dist/* deploy/
+      # Copy browser + server outputs
+      - cp -R dist/portfolio/* deploy/
 
-      # Copy root-level server.ts & package.json
-      - npx tsc server.ts --outDir deploy
+      # Create Elastic Beanstalk startup file (Node.js entry point)
+      - echo "import('./server/server.mjs');" > deploy/server.js
+
+      # Copy package.json so EB can run "npm start"
       - cp package.json deploy/
 
+      # Replace package.json start script for EB
+      - sed -i 's#"serve:ssr": .*#"start": "node server.js",#' deploy/package.json
+
 artifacts:
+  base-directory: deploy
   files:
     - "**/*"
-  base-directory: deploy

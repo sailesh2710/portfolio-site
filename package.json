@@ -7,7 +7,7 @@
     "build:prod": "ng build --configuration=production",
     "serve:ssr": "node dist/portfolio/server/server.mjs",
     "vercel-build": "npm run build:prod",
-    "build:ssr": "ng build --configuration=production && ng run portfolio:server"
+    "build:ssr": "ng build --configuration=production"
   },
   "dependencies": {
     "@angular/animations": "^18.2.13",
