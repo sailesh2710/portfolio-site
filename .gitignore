@@ -5,3 +5,11 @@ node_modules
 .bolt
 
 .vercel
+infra/terraform.tfvars
+# Terraform
+infra/.terraform/
+infra/terraform.tfstate
+infra/terraform.tfstate.backup
+infra/.terraform.lock.hcl
+infra/crash.log
+infra/*.tfvars
