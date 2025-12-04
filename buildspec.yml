@@ -5,6 +5,7 @@ phases:
     runtime-versions:
       node: 20
     commands:
+      - echo "Buildspec found"
       - echo "Installing dependencies..."
       - npm install
       - npm install -g @angular/cli
