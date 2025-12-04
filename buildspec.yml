@@ -21,9 +21,8 @@ phases:
       - cp -R dist/portfolio/browser deploy/public
       - cp -R dist/portfolio/server deploy/server
       - cp Procfile deploy/
-      - cd deploy
-      - zip -r ../build-output.zip .
 
 artifacts:
+  base-directory: deploy
   files:
-    - build-output.zip
+    - '**/*'
