@@ -3,13 +3,19 @@ import { CommonEngine } from '@angular/ssr';
 import express from 'express';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
-import bootstrap from './src/main.server';
+import bootstrap from './dist/portfolio/server/main.server';
 
-// The Express app is exported so that it can be used by serverless Functions.
+// Express app factory
 export function app(): express.Express {
   const server = express();
+
+  // Points to: dist/portfolio/server
   const serverDistFolder = dirname(fileURLToPath(import.meta.url));
+
+  // Points to: dist/portfolio/browser
   const browserDistFolder = resolve(serverDistFolder, '../browser');
+
+  // Location of the SSR template
   const indexHtml = join(serverDistFolder, 'index.server.html');
 
   const commonEngine = new CommonEngine();
@@ -17,14 +23,12 @@ export function app(): express.Express {
   server.set('view engine', 'html');
   server.set('views', browserDistFolder);
 
-  // Example Express Rest API endpoints
-  // server.get('/api/**', (req, res) => { });
-  // Serve static files from /browser
+  // Serve static Angular browser files
   server.get('*.*', express.static(browserDistFolder, {
     maxAge: '1y'
   }));
 
-  // All regular routes use the Angular engine
+  // Handle all SSR-rendered routes
   server.get('*', (req, res, next) => {
     const { protocol, originalUrl, baseUrl, headers } = req;
 
@@ -44,13 +48,14 @@ export function app(): express.Express {
 }
 
 function run(): void {
-  const port = process.env['PORT'] || 4000;
+  // Elastic Beanstalk MUST use port 8080
+  const port = process.env.PORT || 8080;
 
-  // Start up the Node server
   const server = app();
   server.listen(port, () => {
-    console.log(`Node Express server listening on http://localhost:${port}`);
+    console.log(`✔ Angular SSR server running on port ${port}`);
   });
 }
 
+// Only run when not in AWS Lambda/serverless
 run();
