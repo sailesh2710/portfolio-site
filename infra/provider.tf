@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 1.6.0"
+  required_version = ">= 1.5.0"
 
   required_providers {
     aws = {
@@ -10,5 +10,7 @@ terraform {
 }
 
 provider "aws" {
-  region = "us-west-2"
+  region = var.aws_region
+  # Uses your normal AWS CLI credentials (profile/env vars). 
+  # No access_key / secret_key hard-coded here.
 }

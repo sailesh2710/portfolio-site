@@ -1,181 +1,116 @@
-resource "aws_codepipeline" "portfolio_pipeline" {
-  name     = "portfolio-pipeline"
+# ------- S3 bucket for pipeline artifacts -------
+
+resource "aws_s3_bucket" "pipeline_artifacts" {
+  bucket = "${local.name_prefix}-pipeline-artifacts"
+
+  tags = local.tags
+}
+
+# ------- IAM role for CodePipeline -------
+
+data "aws_iam_policy_document" "codepipeline_assume_role" {
+  statement {
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["codepipeline.amazonaws.com"]
+    }
+
+    actions = ["sts:AssumeRole"]
+  }
+}
+
+resource "aws_iam_role" "codepipeline_role" {
+  name               = "${local.name_prefix}-codepipeline-role"
+  assume_role_policy = data.aws_iam_policy_document.codepipeline_assume_role.json
+}
+
+data "aws_iam_policy_document" "codepipeline_policy" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "s3:*",
+      "elasticbeanstalk:*",
+      "ec2:*",
+      "elasticloadbalancing:*",
+      "autoscaling:*",
+      "cloudwatch:*",
+      "codestar-connections:UseConnection",
+      "cloudformation:*"
+    ]
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_role_policy" "codepipeline_policy" {
+  name   = "${local.name_prefix}-codepipeline-policy"
+  role   = aws_iam_role.codepipeline_role.id
+  policy = data.aws_iam_policy_document.codepipeline_policy.json
+}
+
+# ------- CodeStar connection to GitHub -------
+
+resource "aws_codestarconnections_connection" "github" {
+  name          = "${local.name_prefix}-github"
+  provider_type = "GitHub"
+}
+
+# After terraform apply:
+#   AWS Console → Developer Tools → Connections
+#   → find this connection → "Update pending connection"
+#   → complete GitHub OAuth
+# Then the pipeline can actually pull your code.
+
+# ------- CodePipeline: Source (GitHub) -> Deploy (EB) -------
+
+resource "aws_codepipeline" "pipeline" {
+  name     = "${local.name_prefix}-pipeline"
   role_arn = aws_iam_role.codepipeline_role.arn
 
   artifact_store {
+    location = aws_s3_bucket.pipeline_artifacts.bucket
     type     = "S3"
-    location = aws_s3_bucket.artifact_bucket.bucket
   }
 
+  # Stage 1: Source from GitHub via CodeStar connection
   stage {
     name = "Source"
 
     action {
       name             = "Source"
       category         = "Source"
-      owner            = "ThirdParty"
-      provider         = "GitHub"
-      version          = 1
-
+      owner            = "AWS"
+      provider         = "CodeStarSourceConnection"
+      version          = "1"
       output_artifacts = ["SourceOutput"]
 
       configuration = {
-        Owner = "sailesh2710"
-        Repo  = "portfolio-site"
-        Branch     = "main"
-        OAuthToken = var.github_token
+        ConnectionArn    = aws_codestarconnections_connection.github.arn
+        FullRepositoryId = "${var.github_owner}/${var.github_repo}"
+        BranchName       = var.github_branch
       }
     }
   }
 
-  stage {
-    name = "Build"
-
-    action {
-      name             = "Build"
-      category         = "Build"
-      owner            = "AWS"
-      provider         = "CodeBuild"
-      input_artifacts  = ["SourceOutput"]
-      output_artifacts = ["BuildOutput"]
-      version          = 1
-
-      configuration = {
-        ProjectName = aws_codebuild_project.portfolio_build.name
-      }
-    }
-  }
-
+  # Stage 2: Deploy to Elastic Beanstalk
   stage {
     name = "Deploy"
 
     action {
-      name             = "Deploy"
-      category         = "Deploy"
-      owner            = "AWS"
-      provider         = "ElasticBeanstalk"
-      input_artifacts  = ["BuildOutput"]
-      version          = 1
+      name            = "DeployToEB"
+      category        = "Deploy"
+      owner           = "AWS"
+      provider        = "ElasticBeanstalk"
+      version         = "1"
+      input_artifacts = ["SourceOutput"]
 
       configuration = {
-        ApplicationName = aws_elastic_beanstalk_application.portfolio_app.name
-        EnvironmentName = aws_elastic_beanstalk_environment.portfolio_env.name
+        ApplicationName = aws_elastic_beanstalk_application.app.name
+        EnvironmentName = aws_elastic_beanstalk_environment.env.name
       }
     }
   }
-}
 
-resource "aws_codebuild_project" "portfolio_build" {
-  name         = "portfolio-build"
-  service_role = aws_iam_role.codebuild_role.arn
-
-  artifacts {
-    type = "CODEPIPELINE"
-  }
-
-  environment {
-    compute_type                = "BUILD_GENERAL1_SMALL"
-    image                       = "aws/codebuild/standard:6.0"
-    type                        = "LINUX_CONTAINER"
-    privileged_mode             = false
-    environment_variable {
-      name  = "ENV"
-      value = "prod"
-    }
-  }
-
-  source {
-    type      = "CODEPIPELINE"
-    buildspec = "buildspec.yml"
-  }
-
-  cache {
-    type = "LOCAL"
-    modes = ["LOCAL_SOURCE_CACHE"]
-  }
-}
-
-resource "aws_iam_role_policy" "codepipeline_s3_policy" {
-  name = "codepipeline-s3-policy"
-  role = aws_iam_role.codepipeline_role.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:GetBucketLocation",
-          "s3:ListAllMyBuckets"
-        ]
-        Resource = "*"
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:*"
-        ]
-        Resource = [
-          aws_s3_bucket.artifact_bucket.arn,
-          "${aws_s3_bucket.artifact_bucket.arn}/*"
-        ]
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy" "codepipeline_eb_policy" {
-  name = "codepipeline-eb-policy"
-  role = aws_iam_role.codepipeline_role.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "elasticbeanstalk:CreateApplicationVersion",
-          "elasticbeanstalk:UpdateEnvironment",
-          "elasticbeanstalk:DescribeEnvironments",
-          "elasticbeanstalk:DescribeApplicationVersions"
-        ]
-        Resource = "*"
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "cloudformation:GetTemplate",
-          "cloudformation:DescribeStacks",
-          "cloudformation:DescribeStackResources"
-        ]
-        Resource = "*"
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "ec2:DescribeImages",
-          "ec2:DescribeInstances",
-          "ec2:DescribeSecurityGroups",
-          "ec2:DescribeSubnets",
-          "ec2:DescribeVpcs"
-        ]
-        Resource = "*"
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "codepipeline_codebuild_access" {
-  role       = aws_iam_role.codepipeline_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AWSCodeBuildDeveloperAccess"
-}
-
-resource "aws_iam_role_policy_attachment" "codepipeline_s3_access" {
-  role       = aws_iam_role.codepipeline_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
-}
-
-resource "aws_iam_role_policy_attachment" "codebuild_cloudwatch_logs" {
-  role       = aws_iam_role.codebuild_role.name
-  policy_arn = "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
+  tags = local.tags
 }
