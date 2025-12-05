@@ -37,7 +37,9 @@ data "aws_iam_policy_document" "codepipeline_policy" {
       "autoscaling:*",
       "cloudwatch:*",
       "codestar-connections:UseConnection",
-      "cloudformation:*"
+      "cloudformation:*",
+      "codebuild:StartBuild",
+      "codebuild:BatchGetBuilds"
     ]
     resources = ["*"]
   }
@@ -62,7 +64,7 @@ resource "aws_codestarconnections_connection" "github" {
 #   → complete GitHub OAuth
 # Then the pipeline can actually pull your code.
 
-# ------- CodePipeline: Source (GitHub) -> Deploy (EB) -------
+# ------- CodePipeline: Source (GitHub) -> Build(CodeBuild) -> Deploy (EB) -------
 
 resource "aws_codepipeline" "pipeline" {
   name     = "${local.name_prefix}-pipeline"
@@ -73,7 +75,7 @@ resource "aws_codepipeline" "pipeline" {
     type     = "S3"
   }
 
-  # Stage 1: Source from GitHub via CodeStar connection
+  # Stage 1: Source from GitHub
   stage {
     name = "Source"
 
@@ -93,7 +95,26 @@ resource "aws_codepipeline" "pipeline" {
     }
   }
 
-  # Stage 2: Deploy to Elastic Beanstalk
+  # Stage 2: Build via CodeBuild
+  stage {
+    name = "Build"
+
+    action {
+      name             = "BuildApp"
+      category         = "Build"
+      owner            = "AWS"
+      provider         = "CodeBuild"
+      version          = "1"
+      input_artifacts  = ["SourceOutput"]
+      output_artifacts = ["BuildOutput"]
+
+      configuration = {
+        ProjectName = aws_codebuild_project.build.name
+      }
+    }
+  }
+
+  # Stage 3: Deploy to Elastic Beanstalk
   stage {
     name = "Deploy"
 
@@ -103,7 +124,7 @@ resource "aws_codepipeline" "pipeline" {
       owner           = "AWS"
       provider        = "ElasticBeanstalk"
       version         = "1"
-      input_artifacts = ["SourceOutput"]
+      input_artifacts = ["BuildOutput"]  # <--- changed from SourceOutput
 
       configuration = {
         ApplicationName = aws_elastic_beanstalk_application.app.name
