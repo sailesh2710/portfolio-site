@@ -134,5 +134,81 @@ resource "aws_elastic_beanstalk_environment" "env" {
     value     = aws_security_group.eb_instances.id
   }
 
-  tags = local.tags
+  # -------------------------------
+  # AUTO SCALING CONFIGURATION
+  # -------------------------------
+  # Switch environment type to LoadBalanced for scaling
+  setting {
+    namespace = "aws:elasticbeanstalk:environment"
+    name      = "EnvironmentType"
+    value     = "LoadBalanced"
+  }
+
+  # Auto Scaling Group size
+  setting {
+    namespace = "aws:autoscaling:asg"
+    name      = "MinSize"
+    value     = "1"
+  }
+
+  setting {
+    namespace = "aws:autoscaling:asg"
+    name      = "MaxSize"
+    value     = "3"
+  }
+
+  setting {
+    namespace = "aws:autoscaling:asg"
+    name      = "DesiredCapacity"
+    value     = "1"
+  }
+  # Scaling Trigger - Request Count
+setting {
+  namespace = "aws:autoscaling:trigger"
+  name      = "MeasureName"
+  value     = "RequestCount"
+}
+
+setting {
+  namespace = "aws:autoscaling:trigger"
+  name      = "Statistic"
+  value     = "Sum"
+}
+
+setting {
+  namespace = "aws:autoscaling:trigger"
+  name      = "Unit"
+  value     = "Count"
+}
+
+# Threshold (e.g., if > 1000 requests in 1 minute)
+setting {
+  namespace = "aws:autoscaling:trigger"
+  name      = "UpperThreshold"
+  value     = "1000"
+}
+
+setting {
+  namespace = "aws:autoscaling:trigger"
+  name      = "LowerThreshold"
+  value     = "100"
+}
+
+setting {
+  namespace = "aws:autoscaling:trigger"
+  name      = "Period"
+  value     = "30"
+}
+
+setting {
+  namespace = "aws:autoscaling:trigger"
+  name      = "EvaluationPeriods"
+  value     = "1"
+}
+
+setting {
+  namespace = "aws:autoscaling:trigger"
+  name      = "BreachDuration"
+  value     = "20"
+}
 }

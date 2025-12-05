@@ -6,11 +6,14 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+
+    archive = {
+      source  = "hashicorp/archive"
+      version = "~> 2.0"
+    }
   }
 }
 
 provider "aws" {
   region = var.aws_region
-  # Uses your normal AWS CLI credentials (profile/env vars). 
-  # No access_key / secret_key hard-coded here.
 }
