@@ -69,7 +69,7 @@ resource "aws_codebuild_project" "build" {
   # We let CodePipeline feed the source & take the artifact
   source {
     type      = "CODEPIPELINE"
-    buildspec = "buildspec.yml"  # uses your existing file at repo root
+    buildspec = "buildspec.yml" # uses your existing file at repo root
   }
 
   artifacts {

@@ -124,7 +124,7 @@ resource "aws_codepipeline" "pipeline" {
       owner           = "AWS"
       provider        = "ElasticBeanstalk"
       version         = "1"
-      input_artifacts = ["BuildOutput"]  # <--- changed from SourceOutput
+      input_artifacts = ["BuildOutput"] # <--- changed from SourceOutput
 
       configuration = {
         ApplicationName = aws_elastic_beanstalk_application.app.name

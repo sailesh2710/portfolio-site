@@ -12,9 +12,9 @@ resource "aws_iam_role" "eb_ec2_role" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
-      Effect = "Allow",
+      Effect    = "Allow",
       Principal = { Service = "ec2.amazonaws.com" },
-      Action   = "sts:AssumeRole"
+      Action    = "sts:AssumeRole"
     }]
   })
 }
@@ -157,58 +157,75 @@ resource "aws_elastic_beanstalk_environment" "env" {
     value     = "3"
   }
 
+  # Scaling Trigger - Request Count
   setting {
-    namespace = "aws:autoscaling:asg"
-    name      = "DesiredCapacity"
+    namespace = "aws:autoscaling:trigger"
+    name      = "MeasureName"
+    value     = "RequestCount"
+  }
+
+  setting {
+    namespace = "aws:autoscaling:trigger"
+    name      = "Statistic"
+    value     = "Sum"
+  }
+
+  setting {
+    namespace = "aws:autoscaling:trigger"
+    name      = "Unit"
+    value     = "Count"
+  }
+
+  # Threshold (e.g., if > 1000 requests in 1 minute)
+  setting {
+    namespace = "aws:autoscaling:trigger"
+    name      = "UpperThreshold"
+    value     = "1000"
+  }
+
+  setting {
+    namespace = "aws:autoscaling:trigger"
+    name      = "LowerThreshold"
+    value     = "100"
+  }
+
+  setting {
+    namespace = "aws:autoscaling:trigger"
+    name      = "Period"
+    value     = "30"
+  }
+
+  setting {
+    namespace = "aws:autoscaling:trigger"
+    name      = "EvaluationPeriods"
     value     = "1"
   }
-  # Scaling Trigger - Request Count
-setting {
-  namespace = "aws:autoscaling:trigger"
-  name      = "MeasureName"
-  value     = "RequestCount"
-}
 
-setting {
-  namespace = "aws:autoscaling:trigger"
-  name      = "Statistic"
-  value     = "Sum"
-}
+  setting {
+    namespace = "aws:autoscaling:trigger"
+    name      = "BreachDuration"
+    value     = "20"
+  }
 
-setting {
-  namespace = "aws:autoscaling:trigger"
-  name      = "Unit"
-  value     = "Count"
-}
+  # ============================
+  # CloudWatch Logs Streaming
+  # ============================
+  setting {
+    namespace = "aws:elasticbeanstalk:cloudwatch:logs"
+    name      = "StreamLogs"
+    value     = "true"
+  }
 
-# Threshold (e.g., if > 1000 requests in 1 minute)
-setting {
-  namespace = "aws:autoscaling:trigger"
-  name      = "UpperThreshold"
-  value     = "1000"
-}
+  setting {
+    namespace = "aws:elasticbeanstalk:cloudwatch:logs"
+    name      = "RetentionInDays"
+    value     = "14"
+  }
 
-setting {
-  namespace = "aws:autoscaling:trigger"
-  name      = "LowerThreshold"
-  value     = "100"
-}
-
-setting {
-  namespace = "aws:autoscaling:trigger"
-  name      = "Period"
-  value     = "30"
-}
-
-setting {
-  namespace = "aws:autoscaling:trigger"
-  name      = "EvaluationPeriods"
-  value     = "1"
-}
-
-setting {
-  namespace = "aws:autoscaling:trigger"
-  name      = "BreachDuration"
-  value     = "20"
-}
+  # Ensure enhanced health is enabled
+  setting {
+    namespace = "aws:elasticbeanstalk:healthreporting:system"
+    name      = "SystemType"
+    value     = "enhanced"
+  }
 }
