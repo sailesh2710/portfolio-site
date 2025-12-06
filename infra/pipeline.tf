@@ -39,7 +39,13 @@ data "aws_iam_policy_document" "codepipeline_policy" {
       "codestar-connections:UseConnection",
       "cloudformation:*",
       "codebuild:StartBuild",
-      "codebuild:BatchGetBuilds"
+      "codebuild:BatchGetBuilds",
+      "logs:CreateLogGroup",
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+      "logs:DescribeLogGroups",
+      "logs:DescribeLogStreams",
+       "logs:PutRetentionPolicy"
     ]
     resources = ["*"]
   }

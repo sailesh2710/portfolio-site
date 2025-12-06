@@ -180,7 +180,7 @@ resource "aws_elastic_beanstalk_environment" "env" {
   setting {
     namespace = "aws:autoscaling:trigger"
     name      = "UpperThreshold"
-    value     = "1000"
+    value     = "300"
   }
 
   setting {
@@ -204,7 +204,7 @@ resource "aws_elastic_beanstalk_environment" "env" {
   setting {
     namespace = "aws:autoscaling:trigger"
     name      = "BreachDuration"
-    value     = "20"
+    value     = "10"
   }
 
   # ============================
